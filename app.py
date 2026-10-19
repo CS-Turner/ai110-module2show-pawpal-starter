@@ -72,12 +72,20 @@ status_filter = {"All": None, "Completed": True, "Incomplete": False}[filter_sta
 
 filtered = owner.filter_tasks(pet_name=pet_filter, completed=status_filter)
 if filtered:
-    st.table(
-        [
-            {"Pet": pet.name, "Task": task.name, "Priority": task.priority.name.title(), "Completed": task.completed}
-            for pet, task in filtered
-        ]
-    )
+    header = st.columns([3, 2, 2, 2, 2])
+    for col, label in zip(header, ["Task", "Pet", "Priority", "Status", ""]):
+        col.markdown(f"**{label}**")
+
+    for pet, task in filtered:
+        cols = st.columns([3, 2, 2, 2, 2])
+        cols[0].write(task.name)
+        cols[1].write(pet.name)
+        cols[2].write(task.priority.name.title())
+        cols[3].write("✅ Done" if task.completed else "Pending")
+        if not task.completed:
+            if cols[4].button("Mark complete", key=f"complete_{id(task)}"):
+                pet.complete_task(task)
+                st.rerun()
 else:
     st.info("No tasks match this filter.")
 
