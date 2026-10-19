@@ -71,23 +71,16 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 - How did you evaluate or verify what the AI suggested?
     I ran main.py and checked that the sample schedule was ordered by priority and that all sample tasks fit within the available time. I also ran the tests for task completion and adding a task to a pet. Those tests don’t yet cover over-budget scheduling, so I would add a test for that behavior next.
 
-- A second moment, reviewing an algorithm rather than a design, came up in Phase 4.
-    When reviewing Scheduler.detect_conflicts(), I asked how it could be simplified. The suggested version replaced the explicit loop with a defaultdict and a list comprehension:
+**c. AI Strategy**
 
-    ```python
-    from collections import defaultdict
-    def detect_conflicts(self, scheduled_tasks=None):
-        tasks = scheduled_tasks if scheduled_tasks is not None else self._last_plan
-        by_time = defaultdict(list)
-        for st in tasks:
-            by_time[st.start_time].append(st)
-        return [
-            f"Conflict at {t}: " + ", ".join(f"{s.pet.name}: {s.task.name}" for s in group)
-            for t, group in by_time.items() if len(group) > 1
-        ]
-    ```
+- Which AI coding assistant features were most effective for building your scheduler?
+    The most effective pattern was asking for a targeted review (attaching a skeleton or a specific method and asking what's missing or how it could be simplified) rather than open-ended generation requests. That surfaced concrete, checkable issues, like the flat task list losing pet context, instead of vague stylistic feedback.
 
-    It's more compact, but the comprehension buries the len(group) > 1 filter condition in the middle of the expression, making it harder to scan than the original explicit loop. I kept the original version. Readability mattered more here than saving a few lines, especially for code I would want to debug quickly later.
+- Give one example of an AI suggestion you rejected or modified to keep your system design clean.
+    In Phase 4, a suggested simplification of detect_conflicts() replaced the explicit loop with a defaultdict and a list comprehension. It was more compact, but the comprehension buried its filter condition mid-expression and was harder to scan, so I kept the original explicit-loop version for readability and future debuggability.
+
+- How did using separate chat sessions for different phases help you stay organized?
+    Keeping design/skeleton work, algorithmic work, and testing in separate sessions kept each conversation's context focused on one concern. It made it easier to ask pointed follow-up questions without earlier, unrelated context influencing the answers, and easier to tell whether a new suggestion reflected fresh reasoning rather than confusion from an overloaded context window.
 
 ---
 
@@ -97,11 +90,13 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 
 - What behaviors did you test?
 - Why were these tests important?
+    I tested task completion (mark_complete), adding a task to a pet, sorting scheduled tasks chronologically, recurrence (a daily task spawns a next-day instance on completion; a one-off task does not), conflict detection (flags duplicate start times, stays quiet when times differ), and two edge cases (a pet with no tasks, and a task that doesn't fit the time budget being skipped rather than forced in). These matter because they're exactly the "smart" behaviors the README promises; without tests, a later change to the scheduling algorithm could silently break sorting or recurrence.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+    I'm fairly confident (4/5) in the core logic since all 9 tests pass and match the implementation. What's not yet covered: weekly recurrence tied to a specific weekday, true overlapping-duration conflicts (only exact start-time matches are tested), and the Streamlit UI layer itself. If I had more time, I'd add tests for a weekly task's exact due date, for two tasks that overlap without sharing a start time, and for the owner's preferences field once it's actually used by the scheduler.
 
 ---
 
@@ -110,11 +105,14 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+    The Owner/Pet/Task/Scheduler split held up across all six phases without a major rewrite, aside from the one early fix (Scheduler reading from Owner instead of a flat task list). The tested cases for conflict detection and recurrence (duplicate start times, and a daily task creating its next occurrence) passed on the first run, which suggested the design was sound going into implementation. That doesn't cover overlapping-duration conflicts or weekly recurrence, which aren't tested yet.
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+    I'd wire the preferences field into actual scheduling logic instead of leaving it unused, and replace exact-time conflict detection with real overlapping-duration checks. On the UI side, the app currently supports adding pets and tasks and generating a schedule, but not editing a task, marking one complete, or seeing why a task was skipped from the plan (it just silently doesn't appear). I'd add a "mark complete" action so recurrence is visible in the UI rather than only the CLI demo, a way to edit or remove an existing task, and a short explanation next to any skipped task (e.g., "didn't fit in remaining time").
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+    Being the lead architect meant treating AI output as a draft to verify, not a final answer: checking suggestions against actual requirements, confirming behavior by running the code and tests, and deciding when a "more Pythonic" option wasn't actually the better choice for this project. The AI was fastest at generating structure and catching omissions; the judgment about what the system should actually do, and which tradeoffs were acceptable, stayed with me throughout.
