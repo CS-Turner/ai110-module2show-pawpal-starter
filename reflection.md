@@ -5,7 +5,12 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+1. Add/edit a pet care task (walks, feeding, meds, enrichment, grooming)
+2. Generate a daily schedule based on constraints (time available, priority, owner preferences)
+3. Daily plan view, with reasoning for the order, inclusion of tasks
+
 - What classes did you include, and what responsibilities did you assign to each?
+
 
 **b. Design changes**
 

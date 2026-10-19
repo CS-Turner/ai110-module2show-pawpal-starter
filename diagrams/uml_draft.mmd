@@ -1,0 +1,34 @@
+classDiagram
+    class Owner {
+        +str name
+        +List~Pet~ pets
+        +int available_time
+        +add_pet(pet)
+        +get_daily_plan()
+    }
+    class Pet {
+        +str name
+        +str species
+        +Owner owner
+        +List~Task~ tasks
+        +add_task(task)
+        +remove_task(task)
+    }
+    class Task {
+        +str name
+        +str category
+        +int duration
+        +str priority
+        +str recurrence
+        +is_due_today()
+    }
+    class Scheduler {
+        +List~Task~ tasks
+        +int time_available
+        +generate_plan()
+        +explain_plan()
+    }
+    Owner "1" --> "many" Pet : has
+    Pet "1" --> "many" Task : has
+    Scheduler ..> Owner : reads
+    Scheduler ..> Task : schedules
