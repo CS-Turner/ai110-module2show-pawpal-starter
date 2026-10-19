@@ -44,8 +44,11 @@ if owner.pets:
         duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
         priority_label = st.selectbox("Priority", ["low", "medium", "high"], index=2)
         recurrence_label = st.selectbox("Recurrence", ["none", "daily", "weekly"])
+        weekday_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        weekday_label = st.selectbox("Day of week (used only if Recurrence = weekly)", weekday_names)
         if st.form_submit_button("Add task"):
             pet = next(p for p in owner.pets if p.name == pet_choice)
+            weekday_value = weekday_names.index(weekday_label) if recurrence_label == "weekly" else None
             pet.add_task(
                 Task(
                     name=task_title,
@@ -53,6 +56,7 @@ if owner.pets:
                     duration=int(duration),
                     priority=Priority[priority_label.upper()],
                     recurrence=Recurrence[recurrence_label.upper()],
+                    weekday=weekday_value,
                 )
             )
             st.success(f"Added '{task_title}' to {pet_choice}")

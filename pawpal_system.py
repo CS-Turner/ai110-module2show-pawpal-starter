@@ -44,10 +44,12 @@ class Task:
         today = today or date.today()
         if self.completed:
             return False
+        if self.recurrence == Recurrence.WEEKLY and self.weekday is not None:
+            if today.weekday() != self.weekday:
+                return False
+            return self.due_date is None or today >= self.due_date
         if self.due_date is not None:
             return today >= self.due_date
-        if self.recurrence == Recurrence.WEEKLY and self.weekday is not None:
-            return today.weekday() == self.weekday
         return True
 
     def next_occurrence(self) -> Optional["Task"]:
@@ -85,9 +87,8 @@ class Pet:
         self.tasks.append(task)
 
     def remove_task(self, task: Task) -> None:
-        """Remove a care task from this pet, if present."""
-        if task in self.tasks:
-            self.tasks.remove(task)
+        """Remove a care task from this pet, if present (matched by identity, not value)."""
+        self.tasks = [t for t in self.tasks if t is not task]
 
     def complete_task(self, task: Task, today: Optional[date] = None) -> None:
         """Mark a task complete and, if it recurs, queue its next occurrence."""

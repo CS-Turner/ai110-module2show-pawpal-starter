@@ -49,6 +49,26 @@ def test_complete_daily_task_creates_next_occurrence():
     assert new_task.due_date == today + timedelta(days=1)
 
 
+def test_weekly_task_only_due_on_matching_weekday():
+    base = date(2026, 10, 19)
+    task = Task(
+        name="Grooming", category="grooming", duration=20, priority=Priority.MEDIUM,
+        recurrence=Recurrence.WEEKLY, weekday=base.weekday(),
+    )
+    assert task.is_due_today(base) is True
+    assert task.is_due_today(base + timedelta(days=1)) is False
+
+
+def test_weekly_recurrence_respects_weekday_after_due_date_is_set():
+    base = date(2026, 10, 19)
+    task = Task(
+        name="Grooming", category="grooming", duration=20, priority=Priority.MEDIUM,
+        recurrence=Recurrence.WEEKLY, weekday=base.weekday(), due_date=base,
+    )
+    assert task.is_due_today(base + timedelta(days=1)) is False
+    assert task.is_due_today(base + timedelta(weeks=1)) is True
+
+
 def test_complete_one_off_task_does_not_create_new_task():
     pet = Pet(name="Biscuit", species="dog")
     task = Task(name="Vet visit", category="meds", duration=30, priority=Priority.HIGH)
