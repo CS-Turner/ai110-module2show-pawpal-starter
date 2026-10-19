@@ -59,18 +59,52 @@ if owner.pets:
 else:
     st.caption("Add a pet first.")
 
-for pet in owner.pets:
-    if pet.tasks:
-        st.write(f"**{pet.name}'s tasks**")
-        st.table(
-            [{"task": t.name, "duration": t.duration, "priority": t.priority.name.lower()} for t in pet.tasks]
-        )
+st.subheader("All Tasks")
+filter_pet = st.selectbox("Filter by pet", ["All"] + [p.name for p in owner.pets]) if owner.pets else "All"
+filter_status = st.selectbox("Filter by status", ["All", "Completed", "Incomplete"])
+
+pet_filter = None if filter_pet == "All" else filter_pet
+status_filter = {"All": None, "Completed": True, "Incomplete": False}[filter_status]
+
+filtered = owner.filter_tasks(pet_name=pet_filter, completed=status_filter)
+if filtered:
+    st.table(
+        [
+            {"Pet": pet.name, "Task": task.name, "Priority": task.priority.name.title(), "Completed": task.completed}
+            for pet, task in filtered
+        ]
+    )
+else:
+    st.info("No tasks match this filter.")
 
 st.divider()
 
-# --- Step 3: Generate Schedule -> Scheduler ---
+# --- Step 1 (Phase 6): Generate Schedule -> Scheduler, with sorting + conflict warnings ---
 st.subheader("Build Schedule")
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner)
-    scheduler.generate_plan()
-    st.text(scheduler.explain_plan())
+    plan = scheduler.generate_plan()
+    ordered_plan = scheduler.sort_by_time(plan)
+
+    conflicts = scheduler.detect_conflicts(ordered_plan)
+    if conflicts:
+        for warning in conflicts:
+            st.warning(f"⚠️ {warning}")
+    else:
+        st.success("No scheduling conflicts detected.")
+
+    if ordered_plan:
+        st.table(
+            [
+                {
+                    "Time": entry.start_time,
+                    "Pet": entry.pet.name,
+                    "Task": entry.task.name,
+                    "Duration (min)": entry.task.duration,
+                    "Priority": entry.task.priority.name.title(),
+                }
+                for entry in ordered_plan
+            ]
+        )
+    else:
+        st.info("No tasks due today.")
