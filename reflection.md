@@ -35,12 +35,17 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+    The scheduler includes tasks that are due today, sorts them from high to low priority, and schedules them sequentially starting at the owner’s day_start. The total scheduled duration cannot exceed available_time. If a task doesn’t fit in the remaining time, it skips that task and considers the next one. The owner’s preferences field exists but is not used yet; the scheduler currently does not apply preferred time-of-day constraints.
 - How did you decide which constraints mattered most?
+    The available-time budget is the hard limit. Priority determines the order in which tasks are considered, but it does not guarantee that every task will fit. This gives higher-priority tasks first consideration while allowing shorter, lower-priority tasks to use time left over.
+
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+    The scheduler uses a greedy, priority-first approach rather than searching for the best combination of tasks. For example, with 15 minutes available, a high-priority 11-minute task is scheduled before medium- and low-priority tasks of 8 and 7 minutes. The remaining 4 minutes are unused, even though the two lower-priority tasks would fill the budget exactly.    
 - Why is that tradeoff reasonable for this scenario?
+    The approach is simple to follow: tasks are considered in priority order, and each task is either scheduled or skipped based on the remaining time. For a small number of daily tasks, that transparency is useful, even though a different combination could sometimes use the available time more fully.
 
 ---
 
@@ -49,12 +54,18 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+    I used AI to brainstorm the initial classes and their responsibilities, draft the Mermaid UML diagram, and help implement the classes and tests. I also used it to review the design.
+
 - What kinds of prompts or questions were most helpful?
+    The most useful prompt was a focused one: “Review the skeleton and point out any missing relationships or bottlenecks.” That surfaced the issue that a flat task list would lose which pet each task belonged to.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+    I didn’t adopt that design suggestion without checking it. I compared it with the project’s multi-pet requirement and confirmed that the scheduler needed to keep each task associated with its pet. I changed the design so the scheduler receives an Owner and gets pet-task pairs from that owner.
+
 - How did you evaluate or verify what the AI suggested?
+    I ran main.py and checked that the sample schedule was ordered by priority and that all sample tasks fit within the available time. I also ran the tests for task completion and adding a task to a pet. Those tests don’t yet cover over-budget scheduling, so I would add a test for that behavior next.
 
 ---
 

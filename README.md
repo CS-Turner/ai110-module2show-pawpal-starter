@@ -22,6 +22,17 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Implementation Summary
+
+The backend is four classes in `pawpal_system.py`:
+
+1. **Task** — represents one care activity with a priority, optional recurrence (daily/weekly), and completion tracking via `mark_complete()` / `is_due_today()`.
+2. **Pet** — holds a list of `Task`s belonging to that pet.
+3. **Owner** — manages multiple `Pet`s and exposes `get_all_tasks()`, which flattens every pet's tasks into one list; this is what lets scheduling work across pets instead of just one.
+4. **Scheduler** — takes an `Owner` (not a raw task list), pulls tasks via `get_all_tasks()`, filters to what's due today, sorts by priority, and fits tasks into the owner's `available_time` starting at `day_start`, assigning each a clock time. `explain_plan()` renders the result as readable text.
+
+`main.py` demonstrates this end-to-end with one owner, two pets, and four tasks.
+
 ## Getting started
 
 ### Setup
@@ -44,14 +55,14 @@ pip install -r requirements.txt
 
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+Output of `python main.py`:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Today's Schedule:
+  08:00 — Biscuit: Morning walk (30 min) [priority: high]
+  08:30 — Biscuit: Feeding (10 min) [priority: high]
+  08:40 — Whiskers: Litter box clean (10 min) [priority: medium]
+  08:50 — Whiskers: Playtime (20 min) [priority: low]
 ```
 
 ## 🧪 Testing PawPal+

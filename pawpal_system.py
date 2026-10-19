@@ -1,13 +1,12 @@
 """
 pawpal_system.py
-Logic layer for PawPal+ — class skeletons translated from diagrams/uml.mmd.
-No scheduling logic implemented yet (Phase 1: structure only).
+Core logic layer for PawPal+.
 """
 
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 class Priority(Enum):
@@ -24,22 +23,36 @@ class Recurrence(Enum):
 
 @dataclass
 class Task:
+    """A single pet care activity: what, how long, how often, and whether it's done."""
     name: str
-    category: str          # e.g. "walk", "feeding", "meds", "grooming", "enrichment"
-    duration: int           # minutes
+    category: str
+    duration: int                        # minutes
     priority: Priority
     recurrence: Recurrence = Recurrence.NONE
-    weekday: Optional[int] = None       # 0=Mon..6=Sun; set when recurrence == WEEKLY
+    weekday: Optional[int] = None        # 0=Mon..6=Sun; required if recurrence == WEEKLY
+    completed: bool = False
     last_completed: Optional[date] = None
 
-    def is_due_today(self, today: date) -> bool:
-        """Return whether this task should be scheduled on `today`,
-        using recurrence, weekday, and last_completed."""
-        raise NotImplementedError
+    def mark_complete(self, today: Optional[date] = None) -> None:
+        """Mark this task done and record when."""
+        self.completed = True
+        self.last_completed = today or date.today()
+
+    def is_due_today(self, today: Optional[date] = None) -> bool:
+        """Return whether this task should appear in today's plan."""
+        today = today or date.today()
+        if self.recurrence == Recurrence.NONE:
+            return not self.completed
+        if self.recurrence == Recurrence.DAILY:
+            return self.last_completed != today
+        if self.recurrence == Recurrence.WEEKLY:
+            return self.weekday == today.weekday() and self.last_completed != today
+        return False
 
 
 @dataclass
 class Pet:
+    """A pet and the care tasks assigned to it."""
     name: str
     species: str
     owner: Optional["Owner"] = None
@@ -47,54 +60,91 @@ class Pet:
 
     def add_task(self, task: Task) -> None:
         """Add a care task to this pet."""
-        raise NotImplementedError
+        self.tasks.append(task)
 
     def remove_task(self, task: Task) -> None:
-        """Remove a care task from this pet."""
-        raise NotImplementedError
+        """Remove a care task from this pet, if present."""
+        if task in self.tasks:
+            self.tasks.remove(task)
 
 
 @dataclass
 class Owner:
+    """A pet owner: their household of pets, time budget, and preferences."""
     name: str
     available_time: int                  # minutes available per day
-    day_start: str = "08:00"             # clock time the plan starts, "HH:MM"
-    preferences: dict = field(default_factory=dict)   # e.g. {"preferred_walk_time": "morning"}
+    day_start: str = "08:00"             # "HH:MM"
+    preferences: dict = field(default_factory=dict)
     pets: List[Pet] = field(default_factory=list)
 
     def add_pet(self, pet: Pet) -> None:
-        """Add a pet to this owner's household and set pet.owner so the
-        two-way link can't drift out of sync. If `pet` already belongs to
-        another owner, reassign it (remove from the prior owner's list)."""
-        raise NotImplementedError
+        """Add a pet to this household, keeping the owner<->pet link in sync."""
+        if pet.owner is not None and pet.owner is not self and pet in pet.owner.pets:
+            pet.owner.pets.remove(pet)
+        pet.owner = self
+        if pet not in self.pets:
+            self.pets.append(pet)
 
-    def get_daily_plan(self) -> "List[ScheduledTask]":
-        """Return today's scheduled plan across all pets."""
-        raise NotImplementedError
+    def get_all_tasks(self) -> List[Tuple[Pet, Task]]:
+        """Return every (pet, task) pair across all of this owner's pets."""
+        return [(pet, task) for pet in self.pets for task in pet.tasks]
+
+    def get_daily_plan(self, today: Optional[date] = None) -> List["ScheduledTask"]:
+        """Return today's scheduled plan across all pets, via Scheduler."""
+        return Scheduler(self).generate_plan(today)
 
 
 @dataclass
 class ScheduledTask:
-    """One entry in a generated plan: which pet, which task, and when."""
+    """One entry in a generated plan: which pet, which task, and when it starts."""
     pet: Pet
     task: Task
     start_time: str   # "HH:MM"
 
 
 class Scheduler:
-    def __init__(self, tasks: List[Task], time_available: int, preferences: Optional[dict] = None):
-        self.tasks = tasks
-        self.time_available = time_available
-        self.preferences = preferences or {}
-        self._last_plan: List[ScheduledTask] = []
+    """Builds and explains a daily plan from an Owner's pets' tasks."""
 
-    def generate_plan(self) -> List[ScheduledTask]:
-        """Sort/filter tasks by priority and preferences, fit them into
-        time_available, assign clock times, and store the result in
-        self._last_plan so explain_plan() can describe it."""
-        raise NotImplementedError
+    def __init__(self, owner: Owner):
+        self.owner = owner
+
+    def generate_plan(self, today: Optional[date] = None) -> List[ScheduledTask]:
+        """Pick due tasks, sort by priority, fit them into available time, assign start times."""
+        today = today or date.today()
+        due = [(pet, task) for pet, task in self.owner.get_all_tasks() if task.is_due_today(today)]
+        due.sort(key=lambda pair: pair[1].priority.value, reverse=True)
+
+        plan: List[ScheduledTask] = []
+        minutes_used = 0
+        clock = self._to_minutes(self.owner.day_start)
+
+        for pet, task in due:
+            if minutes_used + task.duration > self.owner.available_time:
+                continue
+            plan.append(ScheduledTask(pet=pet, task=task, start_time=self._to_clock(clock)))
+            minutes_used += task.duration
+            clock += task.duration
+
+        self._last_plan = plan
+        return plan
 
     def explain_plan(self) -> str:
-        """Return a human-readable explanation of self._last_plan
-        (the most recently generated plan)."""
-        raise NotImplementedError
+        """Return a human-readable explanation of the most recently generated plan."""
+        if not getattr(self, "_last_plan", None):
+            return "No tasks scheduled for today."
+        lines = ["Today's Schedule:"]
+        for st in self._last_plan:
+            lines.append(
+                f"  {st.start_time} — {st.pet.name}: {st.task.name} "
+                f"({st.task.duration} min) [priority: {st.task.priority.name.lower()}]"
+            )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _to_minutes(hhmm: str) -> int:
+        h, m = map(int, hhmm.split(":"))
+        return h * 60 + m
+
+    @staticmethod
+    def _to_clock(minutes: int) -> str:
+        return f"{minutes // 60:02d}:{minutes % 60:02d}"
