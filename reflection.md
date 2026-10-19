@@ -47,6 +47,9 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 - Why is that tradeoff reasonable for this scenario?
     The approach is simple to follow: tasks are considered in priority order, and each task is either scheduled or skipped based on the remaining time. For a small number of daily tasks, that transparency is useful, even though a different combination could sometimes use the available time more fully.
 
+- A second tradeoff: Scheduler.detect_conflicts() only checks for exact start_time matches, not overlapping durations. A task scheduled at 08:00 for 30 minutes and another at 08:15 for 10 minutes clearly overlap, but the current check would not flag them since their start times differ.
+    This is reasonable for now because exact-match checking is simple and cheap, and in practice the scheduler itself assigns sequential, non-overlapping start times, so conflicts only arise from edge cases like manually added tasks. Catching true overlapping-duration conflicts would need to compare time ranges, not just start times, which is a reasonable next improvement but was out of scope for this phase.
+
 ---
 
 ## 3. AI Collaboration
@@ -66,6 +69,24 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 
 - How did you evaluate or verify what the AI suggested?
     I ran main.py and checked that the sample schedule was ordered by priority and that all sample tasks fit within the available time. I also ran the tests for task completion and adding a task to a pet. Those tests don’t yet cover over-budget scheduling, so I would add a test for that behavior next.
+
+- A second moment, reviewing an algorithm rather than a design, came up in Phase 4.
+    When reviewing Scheduler.detect_conflicts(), I asked how it could be simplified. The suggested version replaced the explicit loop with a defaultdict and a list comprehension:
+
+    ```python
+    from collections import defaultdict
+    def detect_conflicts(self, scheduled_tasks=None):
+        tasks = scheduled_tasks if scheduled_tasks is not None else self._last_plan
+        by_time = defaultdict(list)
+        for st in tasks:
+            by_time[st.start_time].append(st)
+        return [
+            f"Conflict at {t}: " + ", ".join(f"{s.pet.name}: {s.task.name}" for s in group)
+            for t, group in by_time.items() if len(group) > 1
+        ]
+    ```
+
+    It's more compact, but the comprehension buries the len(group) > 1 filter condition in the middle of the expression, making it harder to scan than the original explicit loop. I kept the original version. Readability mattered more here than saving a few lines, especially for code I would want to debug quickly later.
 
 ---
 

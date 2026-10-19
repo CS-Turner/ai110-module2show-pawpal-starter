@@ -4,7 +4,7 @@ Core logic layer for PawPal+.
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -32,6 +32,7 @@ class Task:
     weekday: Optional[int] = None        # 0=Mon..6=Sun; required if recurrence == WEEKLY
     completed: bool = False
     last_completed: Optional[date] = None
+    due_date: Optional[date] = None   # explicit next-due date; None = due immediately
 
     def mark_complete(self, today: Optional[date] = None) -> None:
         """Mark this task done and record when."""
@@ -41,13 +42,34 @@ class Task:
     def is_due_today(self, today: Optional[date] = None) -> bool:
         """Return whether this task should appear in today's plan."""
         today = today or date.today()
+        if self.completed:
+            return False
+        if self.due_date is not None:
+            return today >= self.due_date
+        if self.recurrence == Recurrence.WEEKLY and self.weekday is not None:
+            return today.weekday() == self.weekday
+        return True
+
+    def next_occurrence(self) -> Optional["Task"]:
+        """Return a fresh pending Task for this task's next occurrence, or None if it doesn't recur."""
         if self.recurrence == Recurrence.NONE:
-            return not self.completed
+            return None
+        base_date = self.last_completed or date.today()
         if self.recurrence == Recurrence.DAILY:
-            return self.last_completed != today
-        if self.recurrence == Recurrence.WEEKLY:
-            return self.weekday == today.weekday() and self.last_completed != today
-        return False
+            next_date = base_date + timedelta(days=1)
+        elif self.recurrence == Recurrence.WEEKLY:
+            next_date = base_date + timedelta(weeks=1)
+        else:
+            return None
+        return Task(
+            name=self.name,
+            category=self.category,
+            duration=self.duration,
+            priority=self.priority,
+            recurrence=self.recurrence,
+            weekday=self.weekday,
+            due_date=next_date,
+        )
 
 
 @dataclass
@@ -66,6 +88,13 @@ class Pet:
         """Remove a care task from this pet, if present."""
         if task in self.tasks:
             self.tasks.remove(task)
+
+    def complete_task(self, task: Task, today: Optional[date] = None) -> None:
+        """Mark a task complete and, if it recurs, queue its next occurrence."""
+        task.mark_complete(today)
+        next_task = task.next_occurrence()
+        if next_task is not None:
+            self.add_task(next_task)
 
 
 @dataclass
@@ -92,6 +121,17 @@ class Owner:
     def get_daily_plan(self, today: Optional[date] = None) -> List["ScheduledTask"]:
         """Return today's scheduled plan across all pets, via Scheduler."""
         return Scheduler(self).generate_plan(today)
+
+    def filter_tasks(
+        self, pet_name: Optional[str] = None, completed: Optional[bool] = None
+    ) -> List[Tuple[Pet, Task]]:
+        """Return (pet, task) pairs filtered by pet name and/or completion status."""
+        results = self.get_all_tasks()
+        if pet_name is not None:
+            results = [(p, t) for p, t in results if p.name == pet_name]
+        if completed is not None:
+            results = [(p, t) for p, t in results if t.completed == completed]
+        return results
 
 
 @dataclass
@@ -127,6 +167,25 @@ class Scheduler:
 
         self._last_plan = plan
         return plan
+
+    def sort_by_time(self, scheduled_tasks: Optional[List[ScheduledTask]] = None) -> List[ScheduledTask]:
+        """Return scheduled tasks ordered chronologically by their start_time."""
+        tasks = scheduled_tasks if scheduled_tasks is not None else self._last_plan
+        return sorted(tasks, key=lambda st: st.start_time)
+
+    def detect_conflicts(self, scheduled_tasks: Optional[List[ScheduledTask]] = None) -> List[str]:
+        """Return a warning message for each start_time shared by more than one task."""
+        tasks = scheduled_tasks if scheduled_tasks is not None else self._last_plan
+        by_time: dict = {}
+        for st in tasks:
+            by_time.setdefault(st.start_time, []).append(st)
+
+        warnings = []
+        for start_time, group in by_time.items():
+            if len(group) > 1:
+                names = ", ".join(f"{st.pet.name}: {st.task.name}" for st in group)
+                warnings.append(f"Conflict at {start_time} — {names}")
+        return warnings
 
     def explain_plan(self) -> str:
         """Return a human-readable explanation of the most recently generated plan."""
