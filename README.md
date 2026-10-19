@@ -67,19 +67,29 @@ Today's Schedule:
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the suite with:
 
-# Run with coverage:
-pytest --cov
+```bash
+python -m pytest
 ```
+
+The 9 tests cover: task completion (`mark_complete`), adding a task to a pet, sorting scheduled tasks chronologically (`sort_by_time`), recurring task generation on completion (daily task spawns a next-day instance; a one-off task does not), conflict detection (flags duplicate start times, stays quiet when times differ), and two scheduling edge cases (a pet with no tasks, and a task that doesn't fit the time budget being skipped rather than forced in).
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+================================================= test session starts ==================================================
+platform darwin -- Python 3.13.16, pytest-9.1.1, pluggy-1.7.0
+rootdir: /Users/csturner/codepath-ai110/module2show-pawpal-starter
+plugins: anyio-4.15.1
+collected 9 items
+
+tests/test_pawpal.py .........                                                                                   [100%]
+
+================================================== 9 passed in 0.01s ===================================================
 ```
+
+**Confidence Level:** ⭐⭐⭐⭐☆ (4/5). Core scheduling, sorting, recurrence, and conflict detection are all verified with passing tests. Not yet covered: weekly recurrence with a specific weekday, and the Streamlit UI layer itself (only the backend logic is under test).
 
 ## 📐 Smarter Scheduling
 
