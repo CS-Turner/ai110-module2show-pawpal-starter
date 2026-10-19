@@ -24,12 +24,13 @@ Your final app should:
 
 ## Implementation Summary
 
-The backend is four classes in `pawpal_system.py`:
+The backend is five classes in `pawpal_system.py`:
 
 1. **Task** — represents one care activity with a priority, optional recurrence (daily/weekly), and completion tracking via `mark_complete()` / `is_due_today()`.
 2. **Pet** — holds a list of `Task`s belonging to that pet.
 3. **Owner** — manages multiple `Pet`s and exposes `get_all_tasks()`, which flattens every pet's tasks into one list; this is what lets scheduling work across pets instead of just one.
-4. **Scheduler** — takes an `Owner` (not a raw task list), pulls tasks via `get_all_tasks()`, filters to what's due today, sorts by priority, and fits tasks into the owner's `available_time` starting at `day_start`, assigning each a clock time. `explain_plan()` renders the result as readable text.
+4. **ScheduledTask** — a single entry in a generated plan: which pet, which task, and what time it's scheduled for.
+5. **Scheduler** — takes an `Owner` (not a raw task list), pulls tasks via `get_all_tasks()`, filters to what's due today, sorts by priority, and fits tasks into the owner's `available_time` starting at `day_start`, assigning each a clock time as a `ScheduledTask`. `explain_plan()` renders the result as readable text.
 
 `main.py` demonstrates this end-to-end with one owner, two pets, and four tasks.
 
