@@ -1,15 +1,58 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Task {
+        +str name
+        +str category
+        +int duration
+        +Priority priority
+        +Recurrence recurrence
+        +int weekday
+        +bool completed
+        +date last_completed
+        +date due_date
+        +mark_complete(today)
+        +is_due_today(today) bool
+        +next_occurrence() Task
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +Owner owner
+        +List~Task~ tasks
+        +add_task(task)
+        +remove_task(task)
+        +complete_task(task, today)
     }
 
-    ClassName --> AnotherClass : relationship
+    class Owner {
+        +str name
+        +int available_time
+        +str day_start
+        +dict preferences
+        +List~Pet~ pets
+        +add_pet(pet)
+        +get_all_tasks() List
+        +get_daily_plan(today) List
+        +filter_tasks(pet_name, completed) List
+    }
+
+    class ScheduledTask {
+        +Pet pet
+        +Task task
+        +str start_time
+    }
+
+    class Scheduler {
+        +Owner owner
+        +generate_plan(today) List~ScheduledTask~
+        +explain_plan() str
+        +sort_by_time(scheduled_tasks) List~ScheduledTask~
+        +detect_conflicts(scheduled_tasks) List~str~
+    }
+
+    Owner "1" --> "many" Pet : has
+    Pet "1" --> "many" Task : has
+    Scheduler "1" --> "1" Owner : reads tasks from
+    Scheduler ..> ScheduledTask : creates
+    ScheduledTask --> Pet : references
+    ScheduledTask --> Task : references

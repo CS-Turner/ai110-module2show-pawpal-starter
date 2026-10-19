@@ -24,9 +24,10 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 1. Added ScheduledTask (pet + task + start_time) so the plan no longer loses which pet each task belongs to
 2. Made Owner.add_pet() set Pet.owner, keeping the two-way link in sync
 3. Added weekday and last_completed to Task so is_due_today() has enough data to evaluate recurrence
-4. Added preferences and day_start to Owner, passed into Scheduler, so the plan can account for more than total minutes
+4. Added day_start to Owner, which the scheduler applies when assigning start times. Also added a preferences field to Owner for future constraints (e.g., preferred time-of-day), but it is not yet read by the scheduler.
 5. Made Scheduler store its last generated plan so explain_plan() doesn’t need a plan argument
 6. Changed priority from a free string to a Priority enum so sorting is well-defined, not alphabetic
+7. Phase 4 update: recurrence was reworked further. Task gained a due_date field, and completing a task via Pet.complete_task() now creates a fresh Task instance for the next occurrence (via next_occurrence()) rather than resetting the same task in place.
 
 ---
 
