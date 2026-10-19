@@ -105,12 +105,12 @@ The design includes four classes: Owner, Pet, Task, Scheduler
 **a. What went well**
 
 - What part of this project are you most satisfied with?
-    The Owner/Pet/Task/Scheduler split held up across all six phases without a major rewrite, aside from the one early fix (Scheduler reading from Owner instead of a flat task list). The tested cases for conflict detection and recurrence (duplicate start times, and a daily task creating its next occurrence) passed on the first run, which suggested the design was sound going into implementation. That doesn't cover overlapping-duration conflicts or weekly recurrence, which aren't tested yet.
+    The Owner/Pet/Task/Scheduler split held up across all six phases without a major rewrite, aside from the one early fix (Scheduler reading from Owner instead of a flat task list). The tested cases for conflict detection and recurrence (duplicate start times, and both daily and weekly tasks creating their next occurrence) passed, which suggested the design was sound going into implementation. Overlapping-duration conflicts still aren't tested, since conflict detection only checks exact start-time matches (see §2b).
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
-    I'd wire the preferences field into actual scheduling logic instead of leaving it unused, and replace exact-time conflict detection with real overlapping-duration checks. On the UI side, the app currently supports adding pets and tasks and generating a schedule, but not editing a task, marking one complete, or seeing why a task was skipped from the plan (it just silently doesn't appear). I'd add a "mark complete" action so recurrence is visible in the UI rather than only the CLI demo, a way to edit or remove an existing task, and a short explanation next to any skipped task (e.g., "didn't fit in remaining time").
+    I'd wire the preferences field into actual scheduling logic instead of leaving it unused, and replace exact-time conflict detection with real overlapping-duration checks. On the UI side, the app now supports marking a task complete (which surfaces recurrence directly in the UI), but still has no way to edit or remove an existing task, and doesn't explain why a task was skipped from the plan (it just silently doesn't appear). I'd add a way to edit/remove tasks and a short explanation next to any skipped task (e.g., "didn't fit in remaining time").
 
 **c. Key takeaway**
 

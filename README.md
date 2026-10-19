@@ -118,6 +118,7 @@ tests/test_pawpal.py .........                                                  
 - Add one or more pets
 - Add tasks to a specific pet (title, category, duration, priority, recurrence)
 - Filter the task list by pet and/or completion status
+- Mark a task complete, which automatically queues its next occurrence if it's a daily/weekly task
 - Generate today's schedule, with conflict warnings and a sorted, time-stamped table
 
 **Example workflow:**
@@ -125,9 +126,10 @@ tests/test_pawpal.py .........                                                  
 2. Add two pets, e.g. "Biscuit" (dog) and "Whiskers" (cat).
 3. Add 3-4 tasks across both pets with different priorities and durations.
 4. Use the pet/status filters to check incomplete tasks for one pet.
-5. Click "Generate schedule" to see a sorted, time-stamped plan plus a conflict warning or success message.
+5. Click "Mark complete" on a daily or weekly task and confirm a new pending task appears for its next occurrence.
+6. Click "Generate schedule" to see a sorted, time-stamped plan plus a conflict warning or success message.
 
-**Key Scheduler behaviors demonstrated:** priority-first scheduling within the time budget, chronological sorting (`sort_by_time`), and conflict detection (`detect_conflicts`), all visible in the UI. Recurrence (`complete_task`) is currently only exercised in the CLI demo below; the Streamlit UI doesn't yet expose a "mark complete" action.
+**Key Scheduler behaviors demonstrated:** priority-first scheduling within the time budget, chronological sorting (`sort_by_time`), conflict detection (`detect_conflicts`), and recurrence (`complete_task` queuing the next occurrence) are all visible directly in the UI, not just the CLI demo below.
 
 **Sample CLI output** (`python main.py`):
 
