@@ -10,12 +10,23 @@
 3. Daily plan view, with reasoning for the order, inclusion of tasks
 
 - What classes did you include, and what responsibilities did you assign to each?
+The design includes four classes: Owner, Pet, Task, Scheduler
+1. Owner: name (str), pets (List[Pet]), available_time (int, minutes/day). Responsible for registering pets and retrieving the day’s plan.
+2. Pet: name (str), species (str), owner (Owner), tasks (List[Task]). Responsible for adding/removing its own care tasks.
+3. Task: name (str), category (str — walk/feeding/meds/grooming/enrichment), duration (int), priority (str), recurrence (str — daily/weekly/none). A simple data record for one care item; checks if it’s due today.
+4. Scheduler: tasks (List[Task]), time_available (int). Kept separate from the data classes — responsible for producing an ordered daily plan and explaining the reasoning behind it, so scheduling logic stays out of Owner/Pet/Task.
 
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+1. Added ScheduledTask (pet + task + start_time) so the plan no longer loses which pet each task belongs to
+2. Made Owner.add_pet() set Pet.owner, keeping the two-way link in sync
+3. Added weekday and last_completed to Task so is_due_today() has enough data to evaluate recurrence
+4. Added preferences and day_start to Owner, passed into Scheduler, so the plan can account for more than total minutes
+5. Made Scheduler store its last generated plan so explain_plan() doesn’t need a plan argument
+6. Changed priority from a free string to a Priority enum so sorting is well-defined, not alphabetic
 
 ---
 
